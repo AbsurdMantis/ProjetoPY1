@@ -1,33 +1,52 @@
 import sqlite3
 
+
+initbank = sqlite3.connect("ftbanktestep641030a5177.db")
+pointer = initbank.cursor()
+
+pointer.execute("""CREATE TABLE IF NOT EXISTS Inventario (
+       Ingrediente TEXT,
+       Quantidade REAL)
+               """)
+pointer.execute("""CREATE TABLE IF NOT EXISTS Receitas (
+       Prato TEXT,
+       Ingrediente TEXT,
+       Quantidade REAL)
+       """)
+pointer.execute("""CREATE TABLE IF NOT EXISTS Inventarioback (
+       Ingrediente TEXT,
+       Quantidade REAL)
+               """)
+
 inventario = []
-inventariobackup = []
 recipe = []
 platess = []
-#TODO: CRIAR FUNÇÃO PARA DISPLAY DE CARDÁPIO INTEGRANDO AO BANCO DE DADOS
 dailycomsumption = []
+resultlist = []
+inventarioback = []
 
-#Adiciona ps items da tabela de inventário
+
 def inventario0():
     inputingredient = str(input("Adicione o ingrediente, quando acabar digite 0:"))
     if inputingredient == "0":
         print(inventario)
-        pass
     else:
         inputquanty = float(input("Insira a quantidade do mesmo ingrediente:"))
         invent1 = (inputingredient, inputquanty)
         inventario.append(tuple(invent1))
-        inventariobackup.append(tuple(invent1))
+        inventarioback.append(tuple(invent1))
         inventario0()
 
-#Cria os pratos
+
+
 def plateinterface():
     global inputplate
     inputplate = str(input("Insira aqui o nome do prato que deseja listar:"))
     platess.append(inputplate)
     recipe0()
 
-#Adiciona os ingredientes desse mesmo prato
+
+
 def recipe0():
     inputI = str(input("Insira o ingrediente do prato:"))
     inputQ = float(input("Insira a quantidade do ingrediente:"))
@@ -40,70 +59,87 @@ def recipe0():
         inputV = str(input("Deseja incluir outro prato?:  0 = Sim 1 = Não"))
         if inputV == '0':
             plateinterface()
-        else:
-            pass
 
-#Avalia o consumo diário para subtrair do inventário
+
 def dailycomsu():
-    inputconsumed = str(input("Indique o prato consumido hoje:"))
-    inputquantyconsumed = int(input("Indique quantas vezes o prato foi consumido:"))
-    for (x, y) in inventario:
-        for (a, b, c) in recipe:
-            if a == inputconsumed:
-                if x == b:
-                    global reference
-                    global specific
-                    global results
-                    reference = y
-                    specific = x
-                    results = y - c * inputquantyconsumed
-                    print(results)
-#TODO: TRANSFORMAR ISSO EM LOOP PARA OUTROS PRATOS
+    for h in platess:
+        print("Indique quantas vezes", h, "foi consumido hoje:")
+        inputquantyconsumed = int(input("--"))
+        for (x, y) in inventario:
+            for (a, b, c) in recipe:
+                if a == h:
+                    if x == b:
+                        global reference
+                        global specific
+                        global results
+                        reference = y
+                        specific = x
+                        results = y - c * inputquantyconsumed
+                        resultcalc = (specific, results)
+                        resultlist.append(tuple(resultcalc))
+                        pointer.execute("""
+                        UPDATE Inventario SET Quantidade = '{}' WHERE Ingrediente = '{}'
+                        """.format(results, specific))
 
-inventario0()
-plateinterface()
-dailycomsu()
 
-#cria o banco e o adiciona a função pointer para executar o sqlite
-initbank = sqlite3.connect("ftbankteste1577.db")
-pointer = initbank.cursor()
+def YellowAlert():
+    for (a, b) in inventario:
+        for (c, d) in resultlist:
+            if c == a:
+                f = d/b
+                p = f*100
+                if f >= 0.41:
+                    print(c, "está em nível verde com", p, "% do inventário inicial")
+                elif 0.21 <= f < 0.41:
+                    print(c, "está em nível amarelo com", p, "% do inventário inicial")
+                elif 0 <= f <= 0.20:
+                    print(c, "está em nível vermelho com", p, "% do inventário inicial")
 
-#cria as tabelas necessárias das funções acima
-pointer.execute("""CREATE TABLE Inventario (
-       Ingrediente TEXT,
-       Quantidade REAL)
-               """)
-pointer.execute("""CREATE TABLE Receitas (
-       Prato TEXT,
-       Ingrediente TEXT,
-       Quantidade REAL)
-       """)
-#adiciona os items das funções às tabelas
-pointer.executemany("INSERT INTO Inventario VALUES(?, ?)", inventario)
-pointer.executemany("INSERT INTO Receitas VALUES(?, ?, ?)", recipe)
+def IdleAlert():
+    for (a, b) in inventario:
+        for (c, d) in inventarioback:
+            if c == a:
+                f = d/b
+                p = f*100
+                if f >= 0.41:
+                    print(c, "está em nível verde com", p, "% do inventário inicial")
+                elif 0.21 <= f < 0.41:
+                    print(c, "está em nível amarelo com", p, "% do inventário inicial")
+                elif 0 <= f <= 0.20:
+                    print(c, "está em nível vermelho com", p, "% do inventário inicial")
 
-#dá update baseado no consumo diário
-pointer.execute("""
-                UPDATE Inventario SET Quantidade = '{}' WHERE Ingrediente = '{}'
-                """.format(results, specific))
-#fetch
-testeitem = pointer.fetchall()
+inputy = str(input("Deseja adicionar algo no inventário? 0 = Sim 1 = Não"))
+if inputy == "0":
+    inventario0()
+    pointer.executemany("INSERT INTO Inventario VALUES(?, ?)", inventario)
+    pointer.executemany("INSERT INTO Inventarioback VALUES(?, ?)", inventarioback)
+    YellowAlert()
+else:
+    pointer.execute("""SELECT * FROM Inventario""")
+    inventario = pointer.fetchall()
+    inventarioback = pointer.fetchall()
+    print("O inventário atual é:")
+    for (a, b) in inventario:
+        print("Ingrediente:", a, "-----", "Quantidade KG ou L:", b)
+    IdleAlert()
 
-for x in testeitem:
-    print(x)
-#fecha o banco
-#TODO:PARA FAZER O YELLOW ALERT COM UM FOR NECESSARIO ANTES FORMAR O LOOP DA FUNC DAILY COMSUMPTION
-#def YellowAlert():
-#    for (x,y) in results:
-#        for (a,b) in inventariobackup:
-#            c = y/b
-#            if c >= 0.41:
-#                print("Verde")
-#            elif 0.21 <= c < 0.41:
-#                print("Amarelo")
-#           elif 0.20 <= c <= 0:
-#                print("Vermelho")
 
-#YellowAlert()
+inputp = str(input("Deseja adicionar algo no cardápio? 0 = Sim 1 = Não"))
+if inputy == "0":
+    plateinterface()
+    pointer.executemany("INSERT INTO Receitas VALUES(?, ?, ?)", recipe)
+else:
+    pointer.execute("""SELECT * FROM Receitas""")
+    recipe = pointer.fetchall()
+    for (a, b, c) in recipe:
+        platess.append(a)
+    print("O cardápio atual é:")
+    for t in recipe:
+        print(t[0], "-", t[1], "-", t[2])
+
+inputchecker = str(input("Houve consumo hoje? 0 = Sim 1 = Não"))
+if inputchecker == "0":
+    dailycomsu()
+    YellowAlert()
 
 initbank.commit()
