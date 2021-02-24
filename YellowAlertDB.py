@@ -1,7 +1,7 @@
 import sqlite3
 
 
-initbank = sqlite3.connect("ftbanktestep641030a5177.db")
+initbank = sqlite3.connect("yellowallertbank.db")
 pointer = initbank.cursor()
 
 pointer.execute("""CREATE TABLE IF NOT EXISTS Inventario (
