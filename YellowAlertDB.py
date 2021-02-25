@@ -1,7 +1,7 @@
 import sqlite3
+from collections import defaultdict
 
-
-initbank = sqlite3.connect("yellowallertbank.db")
+initbank = sqlite3.connect("YellowAlertBank2.db")
 pointer = initbank.cursor()
 
 pointer.execute("""CREATE TABLE IF NOT EXISTS Inventario (
@@ -24,13 +24,14 @@ platess = []
 dailycomsumption = []
 resultlist = []
 inventarioback = []
-
+pitput = []
 
 def inventario0():
     inputingredient = str(input("Adicione o ingrediente, quando acabar digite 0:"))
     if inputingredient == "0":
         print(inventario)
     else:
+        global invent1
         inputquanty = float(input("Insira a quantidade do mesmo ingrediente:"))
         invent1 = (inputingredient, inputquanty)
         inventario.append(tuple(invent1))
@@ -74,17 +75,39 @@ def dailycomsu():
                         global results
                         reference = y
                         specific = x
-                        results = y - c * inputquantyconsumed
+                        results = -c * inputquantyconsumed
                         resultcalc = (specific, results)
                         resultlist.append(tuple(resultcalc))
-                        pointer.execute("""
-                        UPDATE Inventario SET Quantidade = '{}' WHERE Ingrediente = '{}'
-                        """.format(results, specific))
+                        output = defaultdict(int)
+        for l, m in resultlist:
+            output[l] += m
+        global outputtt
+        outputt = []
+        outputt.append(list(output.items()))
+        outputtt = outputt.pop()
+        outputste = outputtt + inventario
+        output2 = defaultdict(int)
+        for k, n in outputste:
+            output2[k] += n
+        outteste = []
+        outteste.append((list(output2.items())))
+        global pitput
+        pitput = outteste.pop()
+        for (a,b) in inventario:
+            for (c,d) in pitput:
+                if c == a:
+                    specific = c
+                    resulted = d
+                    pointer.execute("""
+                                    UPDATE Inventario SET Quantidade = '{}' WHERE Ingrediente = '{}'
+                                    """.format(resulted, specific))
+        
 
 
 def YellowAlert():
-    for (a, b) in inventario:
-        for (c, d) in resultlist:
+    global outputtt
+    for (a, b) in inventarioback:
+        for (c, d) in pitput:
             if c == a:
                 f = d/b
                 p = f*100
@@ -96,8 +119,8 @@ def YellowAlert():
                     print(c, "está em nível vermelho com", p, "% do inventário inicial")
 
 def IdleAlert():
-    for (a, b) in inventario:
-        for (c, d) in inventarioback:
+    for (a, b) in inventarioback:
+        for (c, d) in inventario:
             if c == a:
                 f = d/b
                 p = f*100
@@ -141,5 +164,10 @@ inputchecker = str(input("Houve consumo hoje? 0 = Sim 1 = Não"))
 if inputchecker == "0":
     dailycomsu()
     YellowAlert()
+else:
+    pointer.execute("""SELECT * FROM Inventarioback""")
+    inventarioback = pointer.fetchall()
+    IdleAlert()
+
 
 initbank.commit()
